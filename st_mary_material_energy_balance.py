@@ -5,13 +5,16 @@ from datetime import datetime
 import os
 import sys
 import time
-
 import dearpygui.dearpygui as dpg
+from stream_and_unit_classes import SteamStream, Evaporator, SugarStream, SteamTurbine
+
+
 # test for github
 
 def get_data_from_gui(data_dict, title="Data Entry"):
     """Opens a popup window to edit values in a dictionary."""
     dpg.create_context()
+    dpg.set_global_font_scale(1.3)
     
     updated_data = data_dict.copy()
     input_tags = {}
@@ -49,6 +52,7 @@ def get_data_from_gui(data_dict, title="Data Entry"):
 def get_action_gui(title="Continue?"):
     """Opens a popup to ask the user what to do next."""
     dpg.create_context()
+    dpg.set_global_font_scale(1.3)
     user_choice = {"value": ""}
 
     def set_choice(choice):
@@ -72,6 +76,7 @@ def get_action_gui(title="Continue?"):
 def show_results_gui(data_dict, title="Results"):
     """Displays a dictionary of results in a popup window."""
     dpg.create_context()
+    dpg.set_global_font_scale(1.3)
     
     with dpg.window(label=title, tag="Primary Window"):
         dpg.add_text(f"--- {title} ---")
@@ -106,6 +111,7 @@ def show_results_gui(data_dict, title="Results"):
 def show_error_gui(message, title="Error"):
     """Displays a modal error message."""
     dpg.create_context()
+    dpg.set_global_font_scale(1.3)
     
     with dpg.window(label=title, modal=True, no_close=True, tag="ErrorWindow"):
         dpg.add_text(message, wrap=400)
@@ -133,7 +139,6 @@ mill_data = {
     "filter_cake_percent": 5.0,
     "filter_cake_pol": 2.0,
     "mixed_juice_purity": 88.0,
-    "mixed_juice_brix": 14.0,
     "bagasse_percent_pol": 2.0,
     "bagasse_percent_moisture": 49.0,
     "bagasse_percent_ash": 4.0,
@@ -182,9 +187,9 @@ while answer == 'r':
                                                 results['imbibition_water_tons_per_hour'] - 
                                                 results['tons_bagasse_per_hour'])
         
-        mj_pol_pct = (d["mixed_juice_purity"] / 100) * d["mixed_juice_brix"]
-        results['mixed_juice_tons_pol_per_hour'] = (mj_pol_pct / 100) * results['tons_mixed_juice_per_hour']
-        results['mixed_juice_tons_brix_per_hour'] = (d["mixed_juice_brix"] / 100) * results['tons_mixed_juice_per_hour']
+        results['mixed_juice_tons_pol_per_hour'] = results['cane_tons_pol_per_hour'] - results['bagasse_tons_pol_per_hour']
+        results['mixed_juice_percent_pol'] = results['mixed_juice_tons_pol_per_hour'] / results['tons_mixed_juice_per_hour']
+        results['mixed_juice_percent_brix'] = d['mixed_juice_purity'] * 100 / results['mixed_juice_percent_pol']
         results['extraction_percent_pol'] = (results['mixed_juice_tons_pol_per_hour'] / 
                                             results['cane_tons_pol_per_hour']) * 100
 
@@ -202,6 +207,9 @@ while answer == 'r':
         break
 
     mill_results = results
+
+if answer == 'quit':
+    sys.exit()
 
 
 # Now moving on to mud filters and clarifiers
@@ -314,6 +322,9 @@ while answer == 'r':
     if answer == 'quit':
         break
 
+if answer == 'quit':
+    sys.exit()
+
 # Now onto the evaporation section, this is a simple balance that just gets tph syrup and tph evaporated
 
 evaporation_data = {
@@ -358,11 +369,15 @@ while answer == 'r':
     if answer == 'quit':
         break
 
+if answer == 'quit':
+    sys.exit()
+
 # Now for crystallization
 # This is a hybrid 4 boiling / 3 boiling double magma scheme
 
 # Using birkett's slope for crystal yeild based on massecuite purity
 dpg.create_context()
+dpg.set_global_font_scale(1.3)
 birkett_container = {"choice": "n"}
 
 def set_birkett(val):
@@ -416,16 +431,18 @@ def crystal_yield(massecuite_purity):
     y = m * x + y_intercept
     return y # returns crystal yield percent solids
 
-# gather input data for how to run the scheme
-# remember that crystal yeild % solids is (massecuite purity - molasses purity) / (100 - molasses purity)
-# cy / 100 = (massecuite purity - molasses purity) / (100 - molasses purity)
-# cy / 100 * (100 - molasses purity) = massecuite purity - molasses purity
-# cy / 100 * (100 - molasses purity) - massecuite purity = - molasses purity
-# cy * (1 - molasses purity / 100) - massecuite purity = - molasses purity
-# cy - cy * molasses purity / 100 - massecuite purity = - molasses purity
-# molasses purity - cy * molasses purity / 100 = massecuite purity - cy
-# molasses purity (1 - cy / 100) = massecuite purity - cy
-# molasses purity = (massecuite purity - cy) / (1 - cy / 100)
+"""
+gather input data for how to run the scheme
+remember that crystal yeild % solids is (massecuite purity - molasses purity) / (100 - molasses purity)
+cy / 100 = (massecuite purity - molasses purity) / (100 - molasses purity)
+cy / 100 * (100 - molasses purity) = massecuite purity - molasses purity
+cy / 100 * (100 - molasses purity) - massecuite purity = - molasses purity
+cy * (1 - molasses purity / 100) - massecuite purity = - molasses purity
+cy - cy * molasses purity / 100 - massecuite purity = - molasses purity
+molasses purity - cy * molasses purity / 100 = massecuite purity - cy
+molasses purity (1 - cy / 100) = massecuite purity - cy
+molasses purity = (massecuite purity - cy) / (1 - cy / 100)
+"""
 
 def get_molasses_purity(crystal_yield, massecuite_purity):
     """calculates molasses purity based on crystal yield and massecuite purity"""
@@ -456,6 +473,24 @@ pan_data = {
     "b_molasses_percent_to_c_grain_strikes": 10.0,
     "syrup_percent_to_c_grain_strikes": 2.0,
     "a1_massecuite_percent_brix": 92.0,
+    "a2_massecuite_percent_brix": 92.0,
+    "a1_molasses_percent_brix": 75.0,
+    "a2_molasses_percent_brix": 75.0,
+    "b_magma_percent_brix": 92.0,
+    "b_massecuite_percent_brix": 93.0,
+    "b_molasses_percent_brix": 75.0,
+    "grain_massecuite_percent_brix": 90.0,
+    "c_magma_percent_brix": 93.0,
+    "c_massecuite_percent_brix": 95.0,
+    "c_molasses_percent_brix": 75.0,
+    "remelt_percent_brix": evaporation_data["syrup_brix"],
+    "a1_massecuite_steam_factor": 1.15,
+    "a2_massecuite_steam_factor": 1.15,
+    "b_massecuite_steam_factor": 1.15,
+    "c_massecuite_steam_factor": 1.25,
+    "grain_massecuite_steam_factor": 1.25,
+    
+    
     
 }
 
@@ -470,8 +505,7 @@ while answer == 'r':
     try:
         pan_results = {}
 
-        pan_results['tons_syrup_per_hour'] = evaporation_results['tons_syrup_per_hour']
-        pan_results['tons_brix_in_syrup_per_hour'] = (
+        pan_results['tons_brix_syrup_and_remelt_per_hour'] = (
             evaporation_results['tons_syrup_per_hour'] 
             * evaporation_data["syrup_brix"] / 100
         )
@@ -500,7 +534,7 @@ while answer == 'r':
             )
 
             pan_results['tons_brix_syrup_to_a1_strikes'] = (
-                pan_results['tons_brix_in_syrup_per_hour']
+                pan_results['tons_brix_syrup_and_remelt_per_hour']
                 * pan_results['percent_syrup_to_a1_massecuite'] 
                 / 100
             )
@@ -551,7 +585,7 @@ while answer == 'r':
             )
 
             pan_results['tons_brix_syrup_to_a2_strikes'] = (
-                pan_results['tons_brix_in_syrup_per_hour']
+                pan_results['tons_brix_syrup_and_remelt_per_hour']
                 * pan_data['syrup_percent_to_a2_strikes'] 
                 / 100
             )
@@ -667,7 +701,7 @@ while answer == 'r':
 
             pan_results['tons_brix_syrup_for_grain_strikes'] = (
                 pan_data['syrup_percent_to_c_grain_strikes']
-                * pan_results['tons_brix_in_syrup_per_hour']
+                * pan_results['tons_brix_syrup_and_remelt_per_hour']
                 / 100
             )
 
@@ -744,22 +778,231 @@ while answer == 'r':
                 pan_results['percent_c_magma_remelted'] / 100 * pan_results['c_magma_tons_solids_per_hour']
             )
 
-            pan_results['tons_brix_in_syrup_per_hour'] = (
+            pan_results['tons_brix_syrup_and_remelt_per_hour'] = (
                 evaporation_results['tons_brix_in_syrup_per_hour'] 
                 + pan_results['b_magma_tons_solids_remelted']
                 + pan_results['c_magma_tons_solids_remelted']
+            )
+
+            pan_results['tons_syrup_and_remelt_per_hour'] = (
+                pan_results['tons_brix_syrup_and_remelt_per_hour'] * 100 / evaporation_data["syrup_brix"]
             )
 
             pan_results['syrup_purity'] = (
                 (evaporation_results['tons_brix_in_syrup_per_hour'] * clarifier_data['clarified_juice_purity']
                 + pan_results['b_magma_tons_solids_remelted'] * pan_data['b_magma_purity']
                 + pan_results['c_magma_tons_solids_remelted'] * pan_data['c_magma_purity'])
-                / pan_results['tons_brix_in_syrup_per_hour']
+                / pan_results['tons_brix_syrup_and_remelt_per_hour']
             )
+
+            # Calculate total material flows (tons/hr) based on solids and brix
+            pan_results['tons_a1_massecuite_per_hour'] = pan_results['tons_brix_a1_massecuite'] * 100 / pan_data['a1_massecuite_percent_brix']
+            pan_results['tons_a1_molasses_per_hour'] = pan_results['a1_molasses_tons_solids_per_hour'] * 100 / pan_data['a1_molasses_percent_brix']
+            pan_results['tons_a1_sugar_per_hour'] = pan_results['a1_sugar_tons_solids_per_hour'] * 100 / pan_data['raw_sugar_brix']
+
+            pan_results['tons_a2_massecuite_per_hour'] = pan_results['tons_brix_a2_massecuite'] * 100 / pan_data['a2_massecuite_percent_brix']
+            pan_results['tons_a2_molasses_per_hour'] = pan_results['a2_molasses_tons_solids_per_hour'] * 100 / pan_data['a2_molasses_percent_brix']
+            pan_results['tons_a2_sugar_per_hour'] = pan_results['a2_sugar_tons_solids_per_hour'] * 100 / pan_data['raw_sugar_brix']
+
+            pan_results['tons_b_massecuite_per_hour'] = pan_results['tons_brix_b_massecuite'] * 100 / pan_data['b_massecuite_percent_brix']
+            pan_results['tons_b_molasses_per_hour'] = pan_results['b_molasses_tons_solids_per_hour'] * 100 / pan_data['b_molasses_percent_brix']
+            pan_results['tons_b_magma_per_hour'] = pan_results['b_magma_tons_solids_per_hour'] * 100 / pan_data['b_magma_percent_brix']
+
+            pan_results['tons_grain_massecuite_per_hour'] = pan_results['tons_brix_grain_massecuite'] * 100 / pan_data['grain_massecuite_percent_brix']
+
+            pan_results['tons_c_massecuite_per_hour'] = pan_results['tons_solids_c_massecuite'] * 100 / pan_data['c_massecuite_percent_brix']
+            pan_results['tons_c_molasses_per_hour'] = pan_results['c_molasses_tons_solids_per_hour'] * 100 / pan_data['c_molasses_percent_brix']
+            pan_results['tons_c_magma_per_hour'] = pan_results['c_magma_tons_solids_per_hour'] * 100 / pan_data['c_magma_percent_brix']
+
+            # Water Evaporated Calculations
+            # multipliers for using V1 or V2 instead of exhaust
+            v1_multiplier = 0.98330
+            v2_multiplier = 0.96906
+
+            # A1
+            tons_syrup_to_a1 = pan_results['tons_brix_syrup_to_a1_strikes'] * 100 / evaporation_data["syrup_brix"]
+            tons_b_magma_to_a1 = pan_results['tons_brix_b_magma_to_a1_strikes'] * 100 / pan_data['b_magma_percent_brix']
+            pan_results['tons_water_evap_a1'] = tons_syrup_to_a1 + tons_b_magma_to_a1 - pan_results['tons_a1_massecuite_per_hour']
+            pan_results['tons_exhaust_steam_a1'] = pan_results['tons_water_evap_a1'] * pan_data['a1_massecuite_steam_factor']
+            pan_results['tons_v1_steam_a1'] = pan_results['tons_exhaust_steam_a1'] * v1_multiplier
+            pan_results['tons_v2_steam_a1'] = pan_results['tons_exhaust_steam_a1'] * v2_multiplier
+
+            # A2
+            tons_syrup_to_a2 = pan_results['tons_brix_syrup_to_a2_strikes'] * 100 / evaporation_data["syrup_brix"]
+            tons_b_magma_to_a2 = pan_results['tons_brix_b_magma_to_a2_strikes'] * 100 / pan_data['b_magma_percent_brix']
+            tons_a1_mol_to_a2 = pan_results['tons_brix_a1_molasses_for_a2_strikes'] * 100 / pan_data['a1_molasses_percent_brix']
+            pan_results['tons_water_evap_a2'] = tons_syrup_to_a2 + tons_b_magma_to_a2 + tons_a1_mol_to_a2 - pan_results['tons_a2_massecuite_per_hour']
+            pan_results['tons_exhaust_steam_a2'] = pan_results['tons_water_evap_a2'] * pan_data['a2_massecuite_steam_factor']
+            pan_results['tons_v1_steam_a2'] = pan_results['tons_exhaust_steam_a2'] * v1_multiplier
+            pan_results['tons_v2_steam_a2'] = pan_results['tons_exhaust_steam_a2'] * v2_multiplier
+
+            # B
+            tons_a1_mol_to_b = pan_results['tons_brix_a1_molasses_for_b_strikes'] * 100 / pan_data['a1_molasses_percent_brix']
+            tons_a2_mol_to_b = pan_results['tons_brix_a2_molasses_for_b_strikes'] * 100 / pan_data['a2_molasses_percent_brix']
+            tons_c_magma_to_b = pan_results['tons_brix_c_magma_for_b_strikes'] * 100 / pan_data['c_magma_percent_brix']
+            pan_results['tons_water_evap_b'] = tons_a1_mol_to_b + tons_a2_mol_to_b + tons_c_magma_to_b - pan_results['tons_b_massecuite_per_hour']
+            pan_results['tons_exhaust_steam_b'] = pan_results['tons_water_evap_b'] * pan_data['b_massecuite_steam_factor']
+            pan_results['tons_v1_steam_b'] = pan_results['tons_exhaust_steam_b'] * v1_multiplier
+            pan_results['tons_v2_steam_b'] = pan_results['tons_exhaust_steam_b'] * v2_multiplier
+
+            # Grain
+            tons_syrup_to_grain = pan_results['tons_brix_syrup_for_grain_strikes'] * 100 / evaporation_data["syrup_brix"]
+            tons_a1_mol_to_grain = pan_results['tons_brix_a1_molasses_for_grain_strikes'] * 100 / pan_data['a1_molasses_percent_brix']
+            tons_b_mol_to_grain = pan_results['tons_brix_b_molasses_for_grain_strikes'] * 100 / pan_data['b_molasses_percent_brix']
+            pan_results['tons_water_evap_grain'] = tons_syrup_to_grain + tons_a1_mol_to_grain + tons_b_mol_to_grain - pan_results['tons_grain_massecuite_per_hour']
+            pan_results['tons_exhaust_steam_grain'] = pan_results['tons_water_evap_grain'] * pan_data['grain_massecuite_steam_factor']
+            pan_results['tons_v1_steam_grain'] = pan_results['tons_exhaust_steam_grain'] * v1_multiplier
+            pan_results['tons_v2_steam_grain'] = pan_results['tons_exhaust_steam_grain'] * v2_multiplier
+
+            # C
+            tons_grain_to_c = pan_results['tons_grain_massecuite_per_hour']
+            tons_b_mol_to_c = pan_results['tons_b_molasses_for_c_strikes'] * 100 / pan_data['b_molasses_percent_brix']
+            pan_results['tons_water_evap_c'] = tons_grain_to_c + tons_b_mol_to_c - pan_results['tons_c_massecuite_per_hour']
+            pan_results['tons_exhaust_steam_c'] = pan_results['tons_water_evap_c'] * pan_data['c_massecuite_steam_factor']
+            pan_results['tons_v1_steam_c'] = pan_results['tons_exhaust_steam_c'] * v1_multiplier
+            pan_results['tons_v2_steam_c'] = pan_results['tons_exhaust_steam_c'] * v2_multiplier
+
             
             iterations += 1
         
-        display_data = {**pan_data, **pan_results}
+        # Organize outputs for display
+        display_data = {}
+
+        # 1. Overall Inputs/Outputs
+        display_data["--- OVERALL BALANCE ---"] = ""
+        display_data["Syrup Feed (Evap) (Tons/hr)"] = evaporation_results['tons_syrup_per_hour']
+        display_data["Syrup + Remelt Feed (Tons/hr)"] = pan_results['tons_syrup_and_remelt_per_hour']
+        display_data["Syrup Brix"] = evaporation_data["syrup_brix"]
+        display_data["Syrup + Remelt Purity"] = pan_results['syrup_purity']
+        
+        total_sugar_tph = pan_results['tons_a1_sugar_per_hour'] + pan_results['tons_a2_sugar_per_hour']
+        display_data["Total Raw Sugar (Tons/hr)"] = total_sugar_tph
+        display_data["Raw Sugar Pol"] = pan_data['raw_sugar_pol']
+        display_data["Raw Sugar Brix"] = pan_data['raw_sugar_brix']
+        
+        display_data["Final Molasses (Tons/hr)"] = pan_results['tons_c_molasses_per_hour']
+        display_data["Final Molasses Brix"] = pan_data['c_molasses_percent_brix']
+        display_data["Final Molasses Purity"] = pan_results['c_molasses_purity']
+
+        # 2. A1 Station
+        display_data["--- A1 STATION ---"] = ""
+        display_data["A1 Massecuite (Tons/hr)"] = pan_results['tons_a1_massecuite_per_hour']
+        display_data["A1 Massecuite Brix"] = pan_data['a1_massecuite_percent_brix']
+        display_data["A1 Massecuite Purity"] = pan_results['a1_massecuite_purity']
+        display_data["A1 Massecuite Crystal Yield"] = pan_results['a1_massecuite_crystal_yield_percent_solids']
+        
+        # Inputs
+        syrup_to_a1_tph = pan_results['tons_brix_syrup_to_a1_strikes'] * 100 / evaporation_data["syrup_brix"]
+        display_data["A1 Input: Syrup (Tons/hr)"] = syrup_to_a1_tph
+        
+        b_magma_to_a1_tph = pan_results['tons_brix_b_magma_to_a1_strikes'] * 100 / pan_data['b_magma_percent_brix']
+        display_data["A1 Input: B Magma (Tons/hr)"] = b_magma_to_a1_tph
+        
+        # Outputs
+        display_data["Output: A1 Sugar (Tons/hr)"] = pan_results['tons_a1_sugar_per_hour']
+        display_data["Output: A1 Molasses (Tons/hr)"] = pan_results['tons_a1_molasses_per_hour']
+        display_data["A1 Molasses Purity"] = pan_results['a1_molasses_purity']
+        display_data["A1 Water Evaporated (Tons/hr)"] = pan_results['tons_water_evap_a1']
+        display_data["A1 Exhaust Steam Required (Tons/hr)"] = pan_results['tons_exhaust_steam_a1']
+        display_data["A1 V1 Steam Required (Tons/hr)"] = pan_results['tons_v1_steam_a1']
+        display_data["A1 V2 Steam Required (Tons/hr)"] = pan_results['tons_v2_steam_a1']
+
+
+        # 3. A2 Station
+        display_data["--- A2 STATION ---"] = ""
+        display_data["A2 Massecuite (Tons/hr)"] = pan_results['tons_a2_massecuite_per_hour']
+        display_data["A2 Massecuite Brix"] = pan_data['a2_massecuite_percent_brix']
+        display_data["A2 Massecuite Purity"] = pan_results['a2_massecuite_purity']
+        display_data["A2 Massecuite Crystal Yield"] = pan_results['a2_massecuite_crystal_yield_percent_solids']
+        
+        # Inputs
+        syrup_to_a2_tph = pan_results['tons_brix_syrup_to_a2_strikes'] * 100 / evaporation_data["syrup_brix"]
+        display_data["A2 Input: Syrup (Tons/hr)"] = syrup_to_a2_tph
+        
+        b_magma_to_a2_tph = pan_results['tons_brix_b_magma_to_a2_strikes'] * 100 / pan_data['b_magma_percent_brix']
+        display_data["A2 Input: B Magma (Tons/hr)"] = b_magma_to_a2_tph
+        
+        a1_mol_to_a2_tph = pan_results['tons_brix_a1_molasses_for_a2_strikes'] * 100 / pan_data['a1_molasses_percent_brix']
+        display_data["A2 Input: A1 Molasses (Tons/hr)"] = a1_mol_to_a2_tph
+        
+        # Outputs
+        display_data["Output: A2 Sugar (Tons/hr)"] = pan_results['tons_a2_sugar_per_hour']
+        display_data["Output: A2 Molasses (Tons/hr)"] = pan_results['tons_a2_molasses_per_hour']
+        display_data["A2 Molasses Purity"] = pan_results['a2_molasses_purity']
+        display_data["A2 Water Evaporated (Tons/hr)"] = pan_results['tons_water_evap_a2']
+        display_data["A2 Exhaust Steam Required (Tons/hr)"] = pan_results['tons_exhaust_steam_a2']
+        display_data["A2 V1 Steam Required (Tons/hr)"] = pan_results['tons_v1_steam_a2']
+        display_data["A2 V2 Steam Required (Tons/hr)"] = pan_results['tons_v2_steam_a2']
+
+        # 4. B Station
+        display_data["--- B STATION ---"] = ""
+        display_data["B Massecuite (Tons/hr)"] = pan_results['tons_b_massecuite_per_hour']
+        display_data["B Massecuite Brix"] = pan_data['b_massecuite_percent_brix']
+        display_data["B Massecuite Purity"] = pan_results['b_massecuite_purity']
+        display_data["B Massecuite Crystal Yield"] = pan_results['b_massecuite_crystal_yield_percent_solids']
+        
+        # Inputs
+        a1_mol_to_b_tph = pan_results['tons_brix_a1_molasses_for_b_strikes'] * 100 / pan_data['a1_molasses_percent_brix']
+        display_data["B Input: A1 Molasses (Tons/hr)"] = a1_mol_to_b_tph
+        
+        a2_mol_to_b_tph = pan_results['tons_brix_a2_molasses_for_b_strikes'] * 100 / pan_data['a2_molasses_percent_brix']
+        display_data["B Input: A2 Molasses (Tons/hr)"] = a2_mol_to_b_tph
+        
+        c_magma_to_b_tph = pan_results['tons_brix_c_magma_for_b_strikes'] * 100 / pan_data['c_magma_percent_brix']
+        display_data["B Input: C Magma (Tons/hr)"] = c_magma_to_b_tph
+        
+        # Outputs
+        display_data["Output: B Magma (Tons/hr)"] = pan_results['tons_b_magma_per_hour']
+        display_data["B Magma Purity"] = pan_data['b_magma_purity']
+        display_data["Output: B Molasses (Tons/hr)"] = pan_results['tons_b_molasses_per_hour']
+        display_data["B Molasses Purity"] = pan_results['b_molasses_purity']
+        display_data["B Water Evaporated (Tons/hr)"] = pan_results['tons_water_evap_b']
+        display_data["B Exhaust Steam Required (Tons/hr)"] = pan_results['tons_exhaust_steam_b']
+        display_data["B V1 Steam Required (Tons/hr)"] = pan_results['tons_v1_steam_b']
+        display_data["B V2 Steam Required (Tons/hr)"] = pan_results['tons_v2_steam_b']
+
+        # 5. Grain Station
+        display_data["--- GRAIN STATION ---"] = ""
+        display_data["Grain Massecuite (Tons/hr)"] = pan_results['tons_grain_massecuite_per_hour']
+        display_data["Grain Massecuite Brix"] = pan_data['grain_massecuite_percent_brix']
+        display_data["Grain Massecuite Purity"] = pan_results['grain_massecuite_purity']
+        
+        # Inputs
+        syrup_to_grain_tph = pan_results['tons_brix_syrup_for_grain_strikes'] * 100 / evaporation_data["syrup_brix"]
+        display_data["Grain Input: Syrup (Tons/hr)"] = syrup_to_grain_tph
+        
+        a1_mol_to_grain_tph = pan_results['tons_brix_a1_molasses_for_grain_strikes'] * 100 / pan_data['a1_molasses_percent_brix']
+        display_data["Grain Input: A1 Molasses (Tons/hr)"] = a1_mol_to_grain_tph
+        
+        b_mol_to_grain_tph = pan_results['tons_brix_b_molasses_for_grain_strikes'] * 100 / pan_data['b_molasses_percent_brix']
+        display_data["Grain Input: B Molasses (Tons/hr)"] = b_mol_to_grain_tph
+        display_data["Grain Water Evaporated (Tons/hr)"] = pan_results['tons_water_evap_grain']
+        display_data["Grain Exhaust Steam Required (Tons/hr)"] = pan_results['tons_exhaust_steam_grain']
+        display_data["Grain V1 Steam Required (Tons/hr)"] = pan_results['tons_v1_steam_grain']
+        display_data["Grain V2 Steam Required (Tons/hr)"] = pan_results['tons_v2_steam_grain']
+
+        # 6. C Station
+        display_data["--- C STATION ---"] = ""
+        display_data["C Massecuite (Tons/hr)"] = pan_results['tons_c_massecuite_per_hour']
+        display_data["C Massecuite Brix"] = pan_data['c_massecuite_percent_brix']
+        display_data["C Massecuite Purity"] = pan_results['c_massecuite_purity']
+        
+        # Inputs
+        display_data["C Input: Grain Massecuite (Tons/hr)"] = pan_results['tons_grain_massecuite_per_hour']
+        
+        b_mol_to_c_tph = pan_results['tons_b_molasses_for_c_strikes'] * 100 / pan_data['b_molasses_percent_brix']
+        display_data["C Input: B Molasses (Tons/hr)"] = b_mol_to_c_tph
+        
+        # Outputs
+        display_data["Output: C Magma (Tons/hr)"] = pan_results['tons_c_magma_per_hour']
+        display_data["C Magma Purity"] = pan_data['c_magma_purity']
+        display_data["Output: C Molasses (Tons/hr)"] = pan_results['tons_c_molasses_per_hour']
+        display_data["C Molasses Purity"] = pan_results['c_molasses_purity']
+        display_data["C Water Evaporated (Tons/hr)"] = pan_results['tons_water_evap_c']
+        display_data["C Exhaust Steam Required (Tons/hr)"] = pan_results['tons_exhaust_steam_c']
+        display_data["C V1 Steam Required (Tons/hr)"] = pan_results['tons_v1_steam_c']
+        display_data["C V2 Steam Required (Tons/hr)"] = pan_results['tons_v2_steam_c']
+
         show_results_gui(display_data, "Pan Balance Results")
 
     except ZeroDivisionError:
@@ -775,6 +1018,9 @@ while answer == 'r':
     answer = get_action_gui("Pan Data Complete")
     if answer == 'quit':
         break
+
+if answer == 'quit':
+    sys.exit()
 
 # Final Summary
 final_summary = {}
@@ -797,4 +1043,53 @@ except NameError:
     pass  # pan_results not defined, so skip
 
 if final_summary:
-    show_results_gui(final_summary, "Final Material & Energy Balance Summary")
+    show_results_gui(final_summary, "Final Material Summary")
+
+# Now moving onto the energy balance section
+# We will start with steam available from the bagasse, we need working steam pressure from user
+
+# user inputs here, convert to gui later...
+
+live_steam_main_psig = 175 # psig
+live_steam_deg_sh = 0 # degrees superheat in oF
+print("Energy balance uses enthalpy of main steam")
+live_steam_mills_psig = 170 # psig
+live_steam_knives_psig = 165 # psig
+live_steam_other_turbines_psig = 170 # psig, ID fans, FD fans, pumps, ect...
+
+exhaust_steam_knives_psig = 16
+exhaust_steam_mills_psig = 16
+exhaust_steam_other_turbines_psig = 16
+exhaust_steam_evaporators_psig = 14
+exhaust_steam_pans_psig = 14
+
+# now convert to absolute pressure
+live_steam_main_psia = live_steam_main_psig + 14.696
+live_steam_mills_psia = live_steam_mills_psig + 14.696
+live_steam_knives_psia = live_steam_knives_psig + 14.696
+live_steam_other_turbines_psia = live_steam_other_turbines_psig + 14.696
+exhaust_steam_knives_psia = exhaust_steam_knives_psig + 14.696
+exhaust_steam_mills_psia = exhaust_steam_mills_psig + 14.696
+exhaust_steam_other_turbines_psia = exhaust_steam_other_turbines_psig + 14.696
+exhaust_steam_evaporators_psia = exhaust_steam_evaporators_psig + 14.696
+exhaust_steam_pans_psia = exhaust_steam_pans_psig + 14.696
+
+# now we need steam availble from bagasse using Birkett's formula
+live_steam_main = SteamStream('live_steam_main', 'ls_001', 0, live_steam_main_psia, live_steam_deg_sh)
+ghv_bagasse = (
+    .4299 
+    * (19605 
+        - 196.05 * mill_data['bagasse_percent_moisture'] 
+        - 196.05 * mill_data['bagasse_percent_ash']
+        - 31.14 * mill_results['bagasse_percent_brix'])
+) # gross heating value bagasse in btu
+avg_boiler_efficiency = 65 # user input, don't forget
+btu_available_for_steam = ghv_bagasse * avg_boiler_efficiency / 100 * mill_results['tons_bagasse_per_hour'] * 2000
+lbs_steam_available = btu_available_for_steam / live_steam_main.enthalpy
+print(f"ghv bagasse {ghv_bagasse:,.2f}")
+print(f"avg boiler efficiency {avg_boiler_efficiency:,.2f}")
+print(f"btu available from bagasse {btu_available_for_steam:,.2f}")
+print(f"live steam enthalpy {live_steam_main.enthalpy:,.2f}")
+
+print(f"lbs steam availble {lbs_steam_available:,.2f}")
+

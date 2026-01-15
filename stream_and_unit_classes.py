@@ -183,6 +183,7 @@ class SteamStream:
             entropy_metric = sh_steam.s
         self.enthalpy = enthalpy_metric * 0.429923 # btu / lb
         self.entropy = entropy_metric * 0.2388458966 # btu / (lb R)
+        self.sat_liq_enthalpy = sat_liquid.h * 0.429923 # saturated liquid enthalpy
     
     def change_flow(self, new_flow_tph):
         self.mass_flow_tph = new_flow_tph

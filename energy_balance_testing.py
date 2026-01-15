@@ -144,9 +144,10 @@ def get_quality(h_btu):
 
 df_cane_prep['Exhaust Quality'] = df_cane_prep['Exhaust Steam Enthalpy btu/lb'].apply(get_quality)
 df_cane_prep['Exhaust available lb/hr at x=1'] = df_cane_prep['Exhaust Quality'] * df_cane_prep['Steam Required lb/hr']
+df_cane_prep_filter = df_cane_prep.drop(columns=['Exhaust Steam Enthalpy btu/lb'])
 print(df_cane_prep)
 
-# Mill Turbines Data
+# Mill Turbines Data, user inputs
 mill_trb_name_list = ['Mill 1', 'Mill 2', 'Mill 3', 'Mill 4', 'Mill 5', 'Mill 6']
 mill_trb_hp_tf_list = [18, 16, 16, 16, 16, 18]
 mill_trb_ef_list = [0.5] * 6
@@ -191,6 +192,99 @@ def get_quality_mills(h_btu):
 
 df_mill_turbines['Exhaust Quality'] = df_mill_turbines['Exhaust Steam Enthalpy btu/lb'].apply(get_quality_mills)
 df_mill_turbines['Exhaust available lb/hr at x=1'] = df_mill_turbines['Exhaust Quality'] * df_mill_turbines['Steam Required lb/hr']
-print(df_mill_turbines)
+df_mill_turbines_filter = df_mill_turbines.drop(columns=['Exhaust Steam Enthalpy btu/lb'])
+print(df_mill_turbines_filter)
 
-# id, fd, pump turbines
+# id, fd, pump turbines, will be user inputs later
+other_trb_list = [
+ 'id_fan_123_trb',
+ 'id_fan_4_trb', 
+ 'id_fan_5_trb', 
+ 'id_fan_6_trb', 
+ 'id_fan_7_trb', 
+ 'id_fan_8_trb', 
+ 'fd_fan_7_trb', 
+ 'fd_fan_8_trb',
+ 'bfw_pm_1_trb',
+ 'bfw_pm_2_trb',
+ 'bfw_pm_3_trb',
+ 'jc_pm_1_trb',
+ 'jc_pm_2_trb'
+ ]
+
+other_trb_hp_list = [
+    750,
+    235,
+    400,
+    795,
+    1200,
+    1300,
+    233,
+    350,
+    400,
+    400,
+    400,
+    400,
+    0
+]
+
+other_trb_ef_list = [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4,
+    0.4
+]
+
+df_other_turbines = pd.DataFrame({
+    'Turbine Name': other_trb_list,
+    'Horse Power Demand': other_trb_hp_list,
+    'Issentropic Efficiency': other_trb_ef_list
+})
+
+ls_other = IAPWS97(P=live_steam_other_turbines_psia * 0.00689476, h=ls_mn.h)
+ex_other_ideal = IAPWS97(P=exhaust_steam_other_turbines_psia * 0.00689476, s=ls_other.s)
+delta_h_ideal_other = ls_other.h - ex_other_ideal.h # kj/kg
+delta_h_ideal_other_btus = delta_h_ideal_other * 0.429923 # btu/lb
+ideal_ssr_other = 2544 / delta_h_ideal_other_btus # lb/hp-hr
+df_other_turbines['Specific Steam Rate lb/(hr*hp)'] = (
+    ideal_ssr_other 
+    / df_other_turbines['Issentropic Efficiency']
+)
+df_other_turbines['Steam Required lb/hr'] = df_other_turbines['Horse Power Demand'] * df_other_turbines['Specific Steam Rate lb/(hr*hp)']
+def get_exhaust_quality(iss_eff):
+    h_ex_kjkg = ls_other.h - (delta_h_ideal_other * iss_eff)
+    p_mpa = exhaust_steam_other_turbines_psia * 0.00689476
+    return IAPWS97(P=p_mpa, h=h_ex_kjkg).x
+
+df_other_turbines['Exhaust Quality'] = df_other_turbines['Issentropic Efficiency'].apply(get_exhaust_quality)
+df_other_turbines['Exhaust available lb/hr at x=1'] = df_other_turbines['Exhaust Quality'] * df_other_turbines['Steam Required lb/hr']
+
+print(df_other_turbines)
+
+ls_req_cane_prep = df_cane_prep['Steam Required lb/hr'].sum()
+ls_req_mills = df_mill_turbines['Steam Required lb/hr'].sum()
+ls_req_other = df_other_turbines['Steam Required lb/hr'].sum()
+ls_req_equip = ls_req_cane_prep + ls_req_mills + ls_req_other
+
+ex_available_from_trb = (
+    df_cane_prep_filter['Exhaust available lb/hr at x=1'].sum() 
+    + df_mill_turbines_filter['Exhaust available lb/hr at x=1'].sum() 
+    + df_other_turbines['Exhaust available lb/hr at x=1'].sum()
+)
+
+print(f"ls_req_cane_prep {ls_req_cane_prep:,.2f}")
+print(f"ls_req_mills {ls_req_mills:,.2f}")
+print(f"ls_req_other {ls_req_other:,.2f}")
+print(f"ls_req_total_equip {ls_req_equip:,.2f}")
+print(f"ex_available_from_trb {ex_available_from_trb:,.2f}")
+
+# exhaust steam energy balance

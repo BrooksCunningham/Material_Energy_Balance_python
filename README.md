@@ -81,7 +81,7 @@ datetime
 
 3. **Install required packages**
    ```bash
-   pip install iapws pandas numpy CoolProp dearpygui streamlit
+   pip install -r requirements.txt
    ```
 
 ## 💻 Usage
@@ -162,7 +162,7 @@ Material_Energy_Balance_python/
 ├── Mill_Settings.py                # Mill roller and mechanical specs
 ├── pan_balance.py                  # Pan crystallization balance
 ├── energy_balance_testing.py       # Testing and validation scripts
-├── Linear_algrebra.py              # Mathematical utilities
+├── Linear_algrebra.py              # Mathematical utilities (note: filename has typo)
 ├── specific_gravity_brix.py        # Brix-specific gravity conversions
 └── README.md                       # This file
 ```

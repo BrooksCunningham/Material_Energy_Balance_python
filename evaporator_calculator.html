@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sugar Mill Evaporator Calculator</title>
+    <style>
+        :root {
+            --primary: #2c5282;
+            --primary-light: #4299e1;
+            --secondary: #718096;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --danger: #e53e3e;
+            --bg: #f7fafc;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0 30px;
+            border-bottom: 2px solid var(--primary);
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: var(--primary);
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: var(--secondary);
+            font-size: 0.95rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 1000px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--secondary);
+            margin-bottom: 4px;
+        }
+
+        .form-group input, .form-group select {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.15);
+        }
+
+        .form-group .unit {
+            font-size: 0.75rem;
+            color: var(--secondary);
+            margin-top: 2px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+            margin-left: 10px;
+        }
+
+        .actions {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .results-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 500;
+        }
+
+        .results-table tr:hover {
+            background: #f0f4f8;
+        }
+
+        .results-table td:not(:first-child) {
+            text-align: right;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+        }
+
+        .results-table th:not(:first-child) {
+            text-align: right;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .summary-box h3 {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-item .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .summary-item .label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+
+        .status-good {
+            background: var(--success);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .status-warning {
+            background: var(--danger);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--secondary);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            color: var(--secondary);
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: 500;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            color: var(--secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        .effect-areas {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .effect-bleeds {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .effect-areas, .effect-bleeds {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .info-text {
+            font-size: 0.85rem;
+            color: var(--secondary);
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f4f8;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sugar Mill Evaporator Calculator</h1>
+            <p>Multi-Effect Evaporator Material & Energy Balance</p>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <h2>Process Inputs</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="juiceFlow">Juice Flow Rate</label>
+                        <input type="number" id="juiceFlow" value="1450000" step="1000">
+                        <span class="unit">lb/hr</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="juiceBrix">Juice Brix</label>
+                        <input type="number" id="juiceBrix" value="14" step="0.1" min="10" max="25">
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="syrupBrix">Target Syrup Brix</label>
+                        <input type="number" id="syrupBrix" value="65" step="0.1" min="50" max="75">
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="juiceTemp">Juice Inlet Temperature</label>
+                        <input type="number" id="juiceTemp" value="225" step="1">
+                        <span class="unit">°F</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Evaporator Configuration</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="numEffects">Number of Effects</label>
+                        <select id="numEffects">
+                            <option value="3">3 Effects (Triple)</option>
+                            <option value="4" selected>4 Effects (Quad)</option>
+                            <option value="5">5 Effects (Quintuple)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="exhaustPress">Exhaust Pressure</label>
+                        <input type="number" id="exhaustPress" value="14" step="0.5">
+                        <span class="unit">psig</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastEffVac">Last Effect Vacuum</label>
+                        <input type="number" id="lastEffVac" value="25" step="0.5">
+                        <span class="unit">inches Hg</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="tubeLevel">Tube Liquid Level</label>
+                        <input type="number" id="tubeLevel" value="2" step="0.25" min="0.5" max="4">
+                        <span class="unit">ft</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Heating Surface Areas (ft²)</h2>
+            <div class="effect-areas">
+                <div class="form-group">
+                    <label for="area1">Effect 1</label>
+                    <input type="number" id="area1" value="72000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="area2">Effect 2</label>
+                    <input type="number" id="area2" value="48000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="area3">Effect 3</label>
+                    <input type="number" id="area3" value="46000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="area4">Effect 4</label>
+                    <input type="number" id="area4" value="46000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="area5">Effect 5</label>
+                    <input type="number" id="area5" value="5900" step="1000">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Vapor Bleeds (lb/hr)</h2>
+            <div class="effect-bleeds">
+                <div class="form-group">
+                    <label for="bleed1">V1 Bleed</label>
+                    <input type="number" id="bleed1" value="174000" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="bleed2">V2 Bleed</label>
+                    <input type="number" id="bleed2" value="0" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="bleed3">V3 Bleed</label>
+                    <input type="number" id="bleed3" value="0" step="1000">
+                </div>
+                <div class="form-group">
+                    <label for="bleed4">V4 Bleed</label>
+                    <input type="number" id="bleed4" value="0" step="1000">
+                </div>
+            </div>
+            <p class="info-text">Vapor bleeds extract steam from effects for juice heaters or other process uses. V1 Bleed comes from Effect 1 vapor, V2 from Effect 2, etc.</p>
+        </div>
+
+        <div class="card">
+            <h2>Design Parameters</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="dessinK">Dessin Coefficient (K)</label>
+                    <input type="number" id="dessinK" value="20000" step="1000">
+                    <span class="unit">16000 (clean) to 20000 (design)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="calculate()">Calculate Balance</button>
+            <button class="btn btn-secondary" onclick="resetForm()">Reset</button>
+        </div>
+
+        <div id="results" class="results-section hidden">
+            <div id="summaryBox" class="summary-box">
+                <h3>Calculation Summary</h3>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="value" id="sumExhaust">--</div>
+                        <div class="label">Exhaust Steam (lb/hr)</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="sumEvap">--</div>
+                        <div class="label">Total Evaporation (lb/hr)</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="sumSyrup">--</div>
+                        <div class="label">Syrup Output (lb/hr)</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="value" id="sumAvgU">--</div>
+                        <div class="label">Avg U-Ratio</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="statusBox" class="status-good">
+                System Status: Checking...
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('mass')">Mass Balance</div>
+                <div class="tab" onclick="showTab('thermal')">Thermal Properties</div>
+                <div class="tab" onclick="showTab('heat')">Heat Transfer</div>
+                <div class="tab" onclick="showTab('pressure')">Pressure Profile</div>
+            </div>
+
+            <div id="mass" class="tab-content active">
+                <div class="card">
+                    <h2>Mass Balance by Effect</h2>
+                    <table class="results-table" id="massTable">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Effect 1</th>
+                                <th>Effect 2</th>
+                                <th>Effect 3</th>
+                                <th>Effect 4</th>
+                                <th>Effect 5</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="thermal" class="tab-content">
+                <div class="card">
+                    <h2>Thermal Properties by Effect</h2>
+                    <table class="results-table" id="thermalTable">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Exhaust</th>
+                                <th>Effect 1</th>
+                                <th>Effect 2</th>
+                                <th>Effect 3</th>
+                                <th>Effect 4</th>
+                                <th>Effect 5</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="heat" class="tab-content">
+                <div class="card">
+                    <h2>Heat Transfer Coefficients</h2>
+                    <table class="results-table" id="heatTable">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Effect 1</th>
+                                <th>Effect 2</th>
+                                <th>Effect 3</th>
+                                <th>Effect 4</th>
+                                <th>Effect 5</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="pressure" class="tab-content">
+                <div class="card">
+                    <h2>Pressure Profile</h2>
+                    <table class="results-table" id="pressureTable">
+                        <thead>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Exhaust</th>
+                                <th>Effect 1</th>
+                                <th>Effect 2</th>
+                                <th>Effect 3</th>
+                                <th>Effect 4</th>
+                                <th>Effect 5</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Sugar Mill Evaporator Calculator - Material & Energy Balance</p>
+            <p>Based on Dessin heat transfer correlation and industry-standard thermodynamic calculations</p>
+        </footer>
+    </div>
+
+    <script>
+        // Thermodynamic calculation functions
+
+        // Calculate saturation temperature from pressure (psia) using polynomial approximation
+        function calculateTemp(P) {
+            const x = Math.log10(P) + 10;
+            const exponent = (
+                0.0000219687002497959 * Math.pow(x, 6) +
+                -0.00135518069051674 * Math.pow(x, 5) +
+                0.0327789523048858 * Math.pow(x, 4) +
+                -0.377600406306301 * Math.pow(x, 3) +
+                1.85343522575917 * Math.pow(x, 2) +
+                -19.9759078567689
+            );
+            return Math.pow(10, exponent);
+        }
+
+        // Calculate latent heat of vaporization from temperature (°F)
+        function calculateLH(T) {
+            return -0.00000152231563 * Math.pow(T, 3) +
+                   0.000504774867 * Math.pow(T, 2) -
+                   0.634291695987 * T +
+                   1096.29;
+        }
+
+        // Calculate specific heat of sugar solution from brix
+        function calculateCp(brix) {
+            return -0.005656 * brix + 0.9964;
+        }
+
+        // Calculate BPE from brix (Dühring's rule)
+        function calculateBPE1(brix) {
+            return 4.266667 * brix / (100 - brix);
+        }
+
+        // Calculate BPE from liquid head
+        function calculateBPE2(level, brix, tVap) {
+            const brixPoly = (
+                0.99991 +
+                0.0038008 * brix +
+                0.000012662 * Math.pow(brix, 2) +
+                0.00000009596 * Math.pow(brix, 3)
+            );
+            const tempPoly = (
+                5.314 -
+                0.07135 * tVap +
+                0.00033908 * Math.pow(tVap, 2) -
+                0.00000055728 * Math.pow(tVap, 3)
+            );
+            const calculation = level * 6 * brixPoly * tempPoly;
+            return Math.max(1, calculation);
+        }
+
+        // Calculate total BPE
+        function calculateBPE(level, brix, tVap) {
+            return calculateBPE1(brix) + calculateBPE2(level, brix, tVap);
+        }
+
+        // Calculate Dessin heat transfer coefficient
+        function calculateDessin(brix, tCal, lhVap, K) {
+            return (100 - brix) * (tCal - 130) * lhVap / K;
+        }
+
+        // Calculate evaporation in an effect
+        function calculateEvaporation(mL, cp, tIn, tOut, lhCal, lhBod, steamIn) {
+            const qSteam = steamIn * lhCal;
+            const qSensible = mL * cp * (tOut - tIn);
+            const qTotal = qSteam - qSensible;
+            return qTotal / lhBod;
+        }
+
+        // Convert pressure to display units
+        function convertPressure(P) {
+            if (P > 14.7) {
+                return { value: P - 14.7, unit: 'psig' };
+            } else {
+                return { value: 29.92 - P / 0.491154, unit: '"Hg vac' };
+            }
+        }
+
+        // Format number for display
+        function formatNum(num, decimals = 2) {
+            if (num === undefined || num === null || isNaN(num)) return '--';
+            return num.toLocaleString('en-US', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
+
+        // Main calculation function
+        function calculate() {
+            // Get input values
+            const m_L0 = parseFloat(document.getElementById('juiceFlow').value);
+            const bx_0 = parseFloat(document.getElementById('juiceBrix').value);
+            const bx_N = parseFloat(document.getElementById('syrupBrix').value);
+            const T_L0 = parseFloat(document.getElementById('juiceTemp').value);
+            const N = parseInt(document.getElementById('numEffects').value);
+            const P_exh = parseFloat(document.getElementById('exhaustPress').value);
+            const P_N_hg = parseFloat(document.getElementById('lastEffVac').value);
+            const Lvl = parseFloat(document.getElementById('tubeLevel').value);
+            const K = parseFloat(document.getElementById('dessinK').value);
+
+            const areas = [
+                parseFloat(document.getElementById('area1').value),
+                parseFloat(document.getElementById('area2').value),
+                parseFloat(document.getElementById('area3').value),
+                parseFloat(document.getElementById('area4').value),
+                parseFloat(document.getElementById('area5').value)
+            ];
+
+            const bleeds = [
+                parseFloat(document.getElementById('bleed1').value),
+                parseFloat(document.getElementById('bleed2').value),
+                parseFloat(document.getElementById('bleed3').value),
+                parseFloat(document.getElementById('bleed4').value)
+            ];
+
+            // Convert pressures to psia
+            const P_exh_psia = P_exh + 14.7;
+            const P_N_psia = (29.92 - P_N_hg) * 0.491154;
+
+            // Calculate syrup flow and total evaporation
+            const m_LN = m_L0 * (bx_0 / bx_N);
+            const m_Vt = m_L0 - m_LN;
+            const tonsSolids = bx_0 * m_L0 / 100;
+
+            // Calculate X factor and initial exhaust estimate
+            const X = (m_Vt - bleeds[0] - bleeds[1] * 2 - bleeds[2] * 3 - bleeds[3] * 4) / N;
+            const Exh_est = X + bleeds[0] + bleeds[1] + bleeds[2] + bleeds[3];
+            let Exh = Exh_est;
+
+            // Initial pressure profile (linear)
+            const P_drop = (P_exh_psia - P_N_psia) / N;
+            let P = [P_exh_psia];
+            for (let i = 1; i <= 5; i++) {
+                P[i] = P[i-1] - P_drop;
+            }
+
+            // Initialize arrays for results
+            let T = [], LH = [], cp = [], bx = [], m_L = [], bpe = [], bp = [];
+            let m_V = [0, 0, 0, 0, 0, 0];
+            let Q = [];
+
+            // Initial brix profile estimate
+            bx[0] = bx_0;
+            m_L[0] = m_L0;
+
+            // Estimate initial mass flows and brix
+            let tempM = m_L0 - Exh;
+            for (let i = 1; i <= N; i++) {
+                m_L[i] = tempM;
+                bx[i] = tonsSolids / m_L[i] * 100;
+                if (i < N) {
+                    tempM = m_L[i] - (Exh - bleeds.slice(0, i).reduce((a, b) => a + b, 0));
+                }
+            }
+
+            // Master iteration loop for U-ratio balancing
+            const maxMasterIterations = 65;
+            const maxIterations = 5;
+
+            for (let masterIter = 0; masterIter < maxMasterIterations; masterIter++) {
+                // Inner iteration loop for mass balance
+                for (let iter = 0; iter < maxIterations; iter++) {
+                    // Calculate specific heats
+                    for (let i = 0; i <= N; i++) {
+                        cp[i] = calculateCp(bx[i] || bx_0);
+                    }
+
+                    // Calculate temperatures
+                    for (let i = 0; i <= N; i++) {
+                        T[i] = calculateTemp(P[i]);
+                        LH[i] = calculateLH(T[i]);
+                    }
+
+                    // Calculate BPE and boiling points
+                    for (let i = 0; i <= N; i++) {
+                        bpe[i] = calculateBPE(Lvl, bx[i] || bx_0, T[i]);
+                        bp[i] = T[i] + bpe[i];
+                    }
+
+                    // Calculate evaporation for each effect
+                    let steamIn = Exh;
+                    m_V = [0, 0, 0, 0, 0, 0];
+
+                    // Effect 1
+                    m_V[1] = calculateEvaporation(m_L0, cp[1], T_L0, bp[1], LH[0], LH[1], steamIn);
+                    Q[1] = steamIn * LH[0];
+                    m_L[1] = m_L0 - m_V[1];
+                    bx[1] = tonsSolids / m_L[1] * 100;
+                    steamIn = m_V[1] - bleeds[0];
+
+                    // Effects 2 through N
+                    for (let i = 2; i <= N; i++) {
+                        m_V[i] = calculateEvaporation(m_L[i-1], cp[i], bp[i-1], bp[i], LH[i-1], LH[i], steamIn);
+                        Q[i] = steamIn * LH[i-1];
+                        m_L[i] = m_L[i-1] - m_V[i];
+                        bx[i] = tonsSolids / m_L[i] * 100;
+                        if (i < N) {
+                            steamIn = m_V[i] - bleeds[i-1];
+                        }
+                    }
+
+                    // Calculate total evaporation and adjust exhaust
+                    let m_Vt_calc = m_V.slice(1, N+1).reduce((a, b) => a + b, 0);
+                    let evap_diff = m_Vt_calc - m_Vt;
+                    Exh = Exh - evap_diff / 10;
+                }
+
+                // Calculate Dessin heat transfer coefficients
+                let U_dessin = [], U_calc_arr = [], U_ratio = [];
+                for (let i = 1; i <= N; i++) {
+                    U_dessin[i] = calculateDessin(bx[i], T[i-1], LH[i], K);
+                    const deltaT = T[i-1] - bp[i];
+                    U_calc_arr[i] = deltaT > 0 ? Q[i] / (areas[i-1] * deltaT) : 0;
+                    U_ratio[i] = U_dessin[i] > 0 ? U_calc_arr[i] / U_dessin[i] : 0;
+                }
+
+                // Calculate average U ratio
+                let validRatios = U_ratio.slice(1, N+1).filter(r => r > 0);
+                let avgU = validRatios.reduce((a, b) => a + b, 0) / validRatios.length;
+
+                // Adjust pressures based on U ratio
+                for (let i = 1; i < N; i++) {
+                    if (U_ratio[i] > 0) {
+                        P[i] = P[i] * Math.pow(avgU / U_ratio[i], 0.1);
+                    }
+                }
+            }
+
+            // Final calculations for display
+            let U_dessin = [], U_calc_arr = [], U_ratio = [];
+            for (let i = 1; i <= 5; i++) {
+                if (i <= N) {
+                    U_dessin[i] = calculateDessin(bx[i], T[i-1], LH[i], K);
+                    const deltaT = T[i-1] - bp[i];
+                    U_calc_arr[i] = deltaT > 0 ? Q[i] / (areas[i-1] * deltaT) : 0;
+                    U_ratio[i] = U_dessin[i] > 0 ? U_calc_arr[i] / U_dessin[i] : 0;
+                }
+            }
+
+            let validRatios = U_ratio.slice(1, N+1).filter(r => r > 0);
+            let avgU = validRatios.reduce((a, b) => a + b, 0) / validRatios.length;
+
+            // Display results
+            document.getElementById('results').classList.remove('hidden');
+
+            // Summary
+            document.getElementById('sumExhaust').textContent = formatNum(Exh, 0);
+            document.getElementById('sumEvap').textContent = formatNum(m_Vt, 0);
+            document.getElementById('sumSyrup').textContent = formatNum(m_LN, 0);
+            document.getElementById('sumAvgU').textContent = formatNum(avgU, 3);
+
+            // Status
+            const statusBox = document.getElementById('statusBox');
+            if (avgU <= 1) {
+                statusBox.className = 'status-good';
+                statusBox.textContent = 'System Status: Sufficient heating surface for given conditions';
+            } else {
+                statusBox.className = 'status-warning';
+                statusBox.textContent = 'WARNING: Insufficient heating surface for given conditions!';
+            }
+
+            // Mass Balance Table
+            const massBody = document.querySelector('#massTable tbody');
+            massBody.innerHTML = '';
+
+            const massRows = [
+                { label: 'Juice Flow (lb/hr)', data: m_L.slice(1, 6).map((v, i) => i < N ? formatNum(v, 0) : '--') },
+                { label: 'Brix (%)', data: bx.slice(1, 6).map((v, i) => i < N ? formatNum(v, 2) : '--') },
+                { label: 'Evaporation (lb/hr)', data: m_V.slice(1, 6).map((v, i) => i < N ? formatNum(v, 0) : '--') },
+                { label: 'Vapor Bleed (lb/hr)', data: bleeds.concat([0]).map((v, i) => i < N ? formatNum(v, 0) : '--') },
+                { label: 'Specific Heat (BTU/lb°F)', data: cp.slice(1, 6).map((v, i) => i < N ? formatNum(v, 4) : '--') }
+            ];
+
+            massRows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.label}</td>` + row.data.map(v => `<td>${v}</td>`).join('');
+                massBody.appendChild(tr);
+            });
+
+            // Thermal Properties Table
+            const thermalBody = document.querySelector('#thermalTable tbody');
+            thermalBody.innerHTML = '';
+
+            const thermalRows = [
+                { label: 'Vapor Temp (°F)', data: T.slice(0, 6).map((v, i) => i <= N ? formatNum(v, 2) : '--') },
+                { label: 'BPE (°F)', data: bpe.slice(0, 6).map((v, i) => i <= N ? formatNum(v, 2) : '--') },
+                { label: 'Boiling Point (°F)', data: bp.slice(0, 6).map((v, i) => i <= N ? formatNum(v, 2) : '--') },
+                { label: 'Latent Heat (BTU/lb)', data: LH.slice(0, 6).map((v, i) => i <= N ? formatNum(v, 2) : '--') }
+            ];
+
+            thermalRows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.label}</td>` + row.data.map(v => `<td>${v}</td>`).join('');
+                thermalBody.appendChild(tr);
+            });
+
+            // Heat Transfer Table
+            const heatBody = document.querySelector('#heatTable tbody');
+            heatBody.innerHTML = '';
+
+            const heatRows = [
+                { label: 'Heat Duty (BTU/hr)', data: Q.slice(1, 6).map((v, i) => i < N ? formatNum(v, 0) : '--') },
+                { label: 'Area (ft²)', data: areas.map((v, i) => i < N ? formatNum(v, 0) : '--') },
+                { label: 'U Dessin (BTU/hr·ft²·°F)', data: U_dessin.slice(1, 6).map((v, i) => i < N ? formatNum(v, 2) : '--') },
+                { label: 'U Calc (BTU/hr·ft²·°F)', data: U_calc_arr.slice(1, 6).map((v, i) => i < N ? formatNum(v, 2) : '--') },
+                { label: 'U Ratio', data: U_ratio.slice(1, 6).map((v, i) => i < N ? formatNum(v, 4) : '--') }
+            ];
+
+            heatRows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.label}</td>` + row.data.map(v => `<td>${v}</td>`).join('');
+                heatBody.appendChild(tr);
+            });
+
+            // Pressure Profile Table
+            const pressureBody = document.querySelector('#pressureTable tbody');
+            pressureBody.innerHTML = '';
+
+            const pressConv = P.slice(0, 6).map(p => convertPressure(p));
+
+            const pressureRows = [
+                { label: 'Pressure (psia)', data: P.slice(0, 6).map((v, i) => i <= N ? formatNum(v, 2) : '--') },
+                { label: 'Pressure (converted)', data: pressConv.map((v, i) => i <= N ? `${formatNum(v.value, 2)} ${v.unit}` : '--') }
+            ];
+
+            pressureRows.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.label}</td>` + row.data.map(v => `<td>${v}</td>`).join('');
+                pressureBody.appendChild(tr);
+            });
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            document.getElementById('juiceFlow').value = '1450000';
+            document.getElementById('juiceBrix').value = '14';
+            document.getElementById('syrupBrix').value = '65';
+            document.getElementById('juiceTemp').value = '225';
+            document.getElementById('numEffects').value = '4';
+            document.getElementById('exhaustPress').value = '14';
+            document.getElementById('lastEffVac').value = '25';
+            document.getElementById('tubeLevel').value = '2';
+            document.getElementById('area1').value = '72000';
+            document.getElementById('area2').value = '48000';
+            document.getElementById('area3').value = '46000';
+            document.getElementById('area4').value = '46000';
+            document.getElementById('area5').value = '5900';
+            document.getElementById('bleed1').value = '174000';
+            document.getElementById('bleed2').value = '0';
+            document.getElementById('bleed3').value = '0';
+            document.getElementById('bleed4').value = '0';
+            document.getElementById('dessinK').value = '20000';
+            document.getElementById('results').classList.add('hidden');
+        }
+
+        function showTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Update visible areas/bleeds based on number of effects
+        document.getElementById('numEffects').addEventListener('change', function() {
+            const N = parseInt(this.value);
+            // Areas 4 and 5 visibility
+            document.getElementById('area4').parentElement.style.opacity = N >= 4 ? 1 : 0.3;
+            document.getElementById('area5').parentElement.style.opacity = N >= 5 ? 1 : 0.3;
+            // Bleeds visibility
+            document.getElementById('bleed3').parentElement.style.opacity = N >= 4 ? 1 : 0.3;
+            document.getElementById('bleed4').parentElement.style.opacity = N >= 5 ? 1 : 0.3;
+        });
+    </script>
+</body>
+</html>
